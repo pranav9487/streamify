@@ -149,6 +149,7 @@ export async function getFriendsByName(req,res) {
     const userId = req.user._id;
     const query = req.query.q;
     const name = query.toString()
+    
 //     if (typeof query !== "string") {
 //   return res.status(400).json({ error: "Query must be a string" });
 // }
