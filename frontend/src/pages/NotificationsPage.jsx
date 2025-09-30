@@ -1,26 +1,46 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { getFriendRequest, acceptFriendRequest } from "../lib/api";
 import { BellDotIcon, BellIcon, Clock2Icon, MessageSquareMore, UserCheck } from "lucide-react";
 import NoNotifications from "../components/NoNotifications.jsx";
 
 const NotificationsPage = () => {
   const queryClient = useQueryClient();
-  const { data: friendRequest, isLoading } = useQuery({
+  const { data: friendRequest=[], isLoading } = useQuery({
     queryKey: ["friendRequest"],
     queryFn: getFriendRequest,
   });
   const { mutate: acceptRequestMutation, isPending } = useMutation({
     mutationFn: acceptFriendRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries(["friendRequest"]);
-      queryClient.invalidateQueries(["friends"]);
-    },
+      // Invalidate both queries with specific options
+      queryClient.invalidateQueries({ 
+        queryKey: ["friendRequest"],
+        exact: true 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["friends"],
+        exact: true
+      });
+      // Reset local state to trigger re-render
+      setincomingRequest([]);
+    }
   });
-  const incomingRequest = friendRequest?.incomingReqs || [];
+  // const incomingRequest = friendRequest?.incomingReqs || [];
   const acceptedRequest = friendRequest?.acceptedReqs || [];
+  const [incomingRequest, setincomingRequest] = useState([])
+
+  useEffect(() => {
+    if(friendRequest.incomingReqs && friendRequest.incomingReqs.length > 0){
+      setincomingRequest(friendRequest.incomingReqs);
+    }else{
+      setincomingRequest([])
+    }
+  }, [friendRequest])
+   
   console.log(incomingRequest)
-  console.log(acceptedRequest)
+  // console.log(incomingRequest)
+  // console.log(acceptedRequest)
   // console.log(friendRequest);
 
   return (

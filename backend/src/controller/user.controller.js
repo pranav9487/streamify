@@ -12,6 +12,10 @@ export async function getRecommendedUsers(req, res) {
         { _id: { $ne: currentUserId } }, // exclude the current user
         { isOnBoarded: true },
         { _id: { $nin: currentUser.friends } }, // TODO:check the syntax
+        { $or:[
+          {learningLanguage:currentUser.nativeLanguage},
+          {nativeLanguage:currentUser.learningLanguage}
+        ]}
       ],
     });
     res.status(200).json(recommendedUsers);
@@ -118,51 +122,63 @@ export async function getFriendRequests(req, res) {
     const incomingReqs = await FriendRequest.find({
       recipient: req.user.id,
       status: "pending",
-    }).populate("sender","fullName profilePic nativeLanguage learningLanguage")
+    }).populate(
+      "sender",
+      "fullName profilePic nativeLanguage learningLanguage"
+    );
 
-    const acceptedReqs =await FriendRequest.find({
+    const acceptedReqs = await FriendRequest.find({
       sender: req.user.id,
-      status:"accepted"
-    }).populate("recipient","fullName profilePic");
+      status: "accepted",
+    }).populate("recipient", "fullName profilePic");
 
-    res.status(200).json({incomingReqs , acceptedReqs})
+    res.status(200).json({ incomingReqs, acceptedReqs });
   } catch (error) {
-    console.error("Error in getFriendRequests controller: ",error.message)
-    res.status(500).json({message:"internal server error"})
+    console.error("Error in getFriendRequests controller: ", error.message);
+    res.status(500).json({ message: "internal server error" });
   }
 }
-export async function getOutGoingFriendReqs(req,res) {
+export async function getOutGoingFriendReqs(req, res) {
   try {
     const outGoingRequests = await FriendRequest.find({
-      sender:req.user.id,
-      status:"pending"
-    }).populate("recipient","fullName profilePic nativeLanguage learningLanguage");
+      sender: req.user.id,
+      status: "pending",
+    }).populate(
+      "recipient",
+      "fullName profilePic nativeLanguage learningLanguage"
+    );
 
-    res.status(200).json(outGoingRequests)
+    res.status(200).json(outGoingRequests);
   } catch (error) {
-    console.error("error in the getOutGoingFriendReqs controller: ",error.message);
-    res.status(500).json({message:"internal server error"})
+    console.error(
+      "error in the getOutGoingFriendReqs controller: ",
+      error.message
+    );
+    res.status(500).json({ message: "internal server error" });
   }
 }
-export async function getFriendsByName(req,res) {
+export async function getFriendsByName(req, res) {
   try {
     const userId = req.user._id;
+    const curUser = req.user;
     const query = req.query.q;
-    const name = query.toString()
-    
-//     if (typeof query !== "string") {
-//   return res.status(400).json({ error: "Query must be a string" });
-// }
+    const name = query.toString();
+
+    //     if (typeof query !== "string") {
+    //   return res.status(400).json({ error: "Query must be a string" });
+    // }
     const data = await User.find({
-      $and:[
-        {_id:{$ne:userId}},
-        {fullName:{$regex:name,$options:"i"}}
-      ]
-    }).select('fullName profilePic nativeLanguage learningLanguage')
-    return res.status(200).json(data)
+      $and: [
+        { _id: { $ne: userId } },
+        { fullName: { $regex: name, $options: "i" } },
+        { _id: { $nin: curUser.friends } },
+        {isOnBoarded:true}
+      ],
+    }).select("fullName profilePic nativeLanguage learningLanguage");
+    return res.status(200).json(data);
   } catch (error) {
-    console.error("error in the getFriendsByName controller",error);
-    res.status(500).json({message:"internal server error"})
+    console.error("error in the getFriendsByName controller", error);
+    res.status(500).json({ message: "internal server error" });
   }
-  return res.status(200).json({message:"hello"})
-} 
+  return res.status(200).json({ message: "hello" });
+}
